@@ -1,0 +1,13 @@
+import "tfplan/v2" as tfplan
+
+s3_buckets = filter tfplan.resource_changes as _, rc {
+  rc.type is "aws_s3_bucket" and
+  rc.change.actions contains "create"
+}
+
+main = rule {
+  all s3_buckets as _, b {
+    b.change.after.acl is null or
+    b.change.after.acl is "private"
+  }
+}

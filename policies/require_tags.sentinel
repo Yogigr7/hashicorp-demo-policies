@@ -1,0 +1,24 @@
+import "tfplan/v2" as tfplan
+
+required_tags = [
+  "business_contact",
+  "business_owner",
+  "tech_contact",
+  "tech_owner",
+  "environment",
+  "product"
+]
+
+all_resources = filter tfplan.resource_changes as _, rc {
+  rc.mode is "managed" and
+  rc.type is "aws_s3_bucket" and
+  rc.change.actions contains "create"
+}
+
+main = rule {
+  all all_resources as _, r {
+    all required_tags as tag {
+      r.change.after.tags[tag] is not null
+    }
+  }
+}
