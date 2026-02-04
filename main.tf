@@ -38,12 +38,38 @@ resource "random_integer" "test_bucket" {
   max = 9999
 }
 
+# Create bucket (private by default)
 resource "aws_s3_bucket" "test_bucket" {
   bucket = "tfc-poc-yogi-policies${random_integer.test_bucket.result}"
-  acl    = "public-read"
 
   tags = merge(module.tagging.value, {
     "PermissionsBoundary" = "JuniorCPE_PermissionsBoundary"
-    
+  })
+}
+
+# Disable public access protections (THIS is what Sentinel should detect)
+resource "aws_s3_bucket_public_access_block" "allow_public" {
+  bucket = aws_s3_bucket.test_bucket.id
+
+  block_public_acls       = false
+  block_public_policy     = false
+  ignore_public_acls      = false
+  restrict_public_buckets = false
+}
+
+# Add public read policy (THIS is real public exposure)
+resource "aws_s3_bucket_policy" "public_read" {
+  bucket = aws_s3_bucket.test_bucket.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = "*"
+        Action = "s3:GetObject"
+        Resource = "${aws_s3_bucket.test_bucket.arn}/*"
+      }
+    ]
   })
 }
