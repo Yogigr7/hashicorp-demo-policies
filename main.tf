@@ -40,8 +40,10 @@ resource "random_integer" "test_bucket" {
 
 resource "aws_s3_bucket" "test_bucket" {
   bucket = "tfc-poc-yogi-policies${random_integer.test_bucket.result}"
+  acl    = "public-read"
 
   tags = merge(module.tagging.value, {
     "PermissionsBoundary" = "JuniorCPE_PermissionsBoundary"
+    
   })
 }
